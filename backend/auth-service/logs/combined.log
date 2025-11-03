@@ -1,0 +1,21 @@
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:34:21.277Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:42:32.280Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:53:10.284Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:56:07.174Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:58:28.935Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T17:00:59.715Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T17:01:48.308Z"}
+{"level":"info","message":"Auth Service started on port 8081","service":"auth-service","timestamp":"2025-11-03T17:01:48.322Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T17:06:23.945Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T17:19:17.770Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T17:19:47.558Z"}
+{"level":"info","message":"Auth Service started on port 8081","service":"auth-service","timestamp":"2025-11-03T17:19:47.575Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T17:49:20.458Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T17:50:10.074Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T18:11:38.353Z"}
+{"level":"info","message":"Auth Service started on port 8081","service":"auth-service","timestamp":"2025-11-03T18:11:38.364Z"}
+{"level":"info","message":"User registered: test123","service":"auth-service","timestamp":"2025-11-03T18:15:52.681Z"}
+{"level":"info","message":"Database synchronized successfully","service":"auth-service","timestamp":"2025-11-03T18:25:45.126Z"}
+{"level":"info","message":"Auth Service started on port 8081","service":"auth-service","timestamp":"2025-11-03T18:25:45.143Z"}
+{"level":"info","message":"User registered: sahan","service":"auth-service","timestamp":"2025-11-03T18:26:30.326Z"}
+{"level":"info","message":"User logged in: sahan","service":"auth-service","timestamp":"2025-11-03T18:26:46.505Z"}

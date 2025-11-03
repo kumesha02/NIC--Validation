@@ -1,0 +1,645 @@
+# NIC Validation System - Full Stack Development Prompt for Cursor IDE
+
+## Project Overview
+Build a complete NIC (National Identity Card) Validation System for Sri Lanka using React (Frontend) and Node.js (Backend) with Microservices Architecture and MySQL database.
+
+---
+
+## Backend Development Instructions
+
+### 1. Initial Setup - Microservices Architecture
+
+Create a Node.js microservices project with the following structure:
+
+```
+backend/
+├── api-gateway/          # Port 8080 - Main entry point
+├── auth-service/         # Port 8081 - Authentication & JWT
+├── nic-validation-service/  # Port 8082 - NIC validation logic
+├── file-processing-service/ # Port 8083 - CSV file handling
+├── dashboard-service/    # Port 8084 - Analytics & metrics
+├── report-service/       # Port 8085 - PDF/CSV/Excel generation
+├── shared/               # Shared utilities, models, middleware
+└── docker-compose.yml    # Docker configuration
+```
+
+**Technologies:**
+- Express.js for all services
+- MySQL with Sequelize ORM
+- JWT for authentication (jsonwebtoken)
+- Bcrypt for password hashing
+- Multer for file uploads
+- PapaParse for CSV parsing
+- PDFKit for PDF generation
+- ExcelJS for Excel generation
+- Axios for inter-service communication
+- Dotenv for environment variables
+- Cors for cross-origin requests
+- Express-validator for input validation
+
+
+### 2. Database Configuration
+
+Create MySQL database schema with Sequelize models:
+
+**Models Required:**
+1. **User Model** - id, username, email, password (hashed), createdAt, lastLogin, isActive
+2. **UploadedFile Model** - id, fileName, originalName, totalRecords, validRecords, invalidRecords, uploadedAt, uploadedBy (FK), status
+3. **NICRecord Model** - id, nicNumber, birthday, age, gender, fileId (FK), isValid, validationError, processedAt
+4. **Report Model** - id, reportType, fileName, filePath, generatedBy (FK), generatedAt, status
+
+**Relationships:**
+- User has many UploadedFiles
+- User has many Reports
+- UploadedFile has many NICRecords (cascade delete)
+
+### 3. Authentication Service (Port 8081)
+
+**Endpoints:**
+- POST `/auth/register` - Register new user (username, email, password)
+- POST `/auth/login` - Login (username, password) → Returns JWT token
+- POST `/auth/logout` - Logout and invalidate token
+- POST `/auth/forgot-password` - Send password reset email
+- POST `/auth/reset-password` - Reset password with token
+- GET `/auth/verify` - Verify JWT token validity
+
+**Requirements:**
+- Hash passwords using bcrypt (salt rounds: 10)
+- Generate JWT tokens with 24-hour expiration
+- Include user id and username in JWT payload
+- Implement middleware to verify JWT tokens
+- Proper error handling for invalid credentials
+
+### 4. NIC Validation Service (Port 8082)
+
+**Core Validation Logic:**
+
+Implement Sri Lankan NIC validation with these rules:
+
+**Old Format (9 digits + V/X):**
+- Example: 923456789V or 923456789X
+- First 2 digits: Year (92 = 1992 or 1892 depending on century logic)
+- Next 3 digits: Day of year (001-366 for males, 501-866 for females)
+- Last 4 digits: Serial number
+- Last character: V or X
+
+**New Format (12 digits):**
+- Example: 199212345678
+- First 4 digits: Full year (1992)
+- Next 3 digits: Day of year (001-366 for males, 501-866 for females)
+- Last 5 digits: Serial number
+
+**Validation Algorithm:**
+1. Check format (regex validation)
+2. Extract year, day of year, and serial number
+3. If day > 500, subtract 500 and gender = FEMALE, else gender = MALE
+4. Convert day of year to actual date (birthday)
+5. Calculate age = current year - birth year (adjust if birthday hasn't occurred this year)
+6. Return: { nicNumber, isValid, birthday, age, gender, errorMessage }
+
+**Endpoints:**
+- POST `/validate/single` - Validate single NIC
+- POST `/validate/batch` - Validate array of NICs
+- GET `/validate/formats` - Get supported NIC formats
+
+### 5. File Processing Service (Port 8083)
+
+**Endpoints:**
+- POST `/files/upload` - Upload 4 CSV files simultaneously (multipart/form-data)
+- GET `/files/list` - Get all uploaded files for logged-in user
+- GET `/files/:id` - Get specific file details
+- DELETE `/files/:id` - Delete file and associated records
+- GET `/files/:id/records` - Get all NIC records for a file with pagination
+
+**Requirements:**
+- Accept exactly 4 CSV files (validate in middleware)
+- Validate CSV format (must have headers: NIC, or NIC_Number)
+- Process files asynchronously (use async/await properly)
+- Parse CSV using PapaParse
+- For each NIC in CSV:
+  - Call NIC Validation Service
+  - Save result to database (NICRecord model)
+- Update file statistics (totalRecords, validRecords, invalidRecords)
+- Implement batch processing (process 1000 rows at a time to avoid memory issues)
+- Return processing status and summary
+
+### 6. Dashboard Service (Port 8084)
+
+**Endpoints:**
+- GET `/dashboard/summary` - Get overall statistics
+  - Total records count
+  - Male count
+  - Female count
+  - Valid vs invalid records
+  - Files processed count
+
+- GET `/dashboard/charts` - Get data for charts
+  - Gender distribution (for pie chart)
+  - Age distribution by ranges: 0-18, 19-30, 31-50, 51-70, 70+ (for bar chart)
+  - Records per file (for bar chart)
+
+- GET `/dashboard/recent-uploads` - Get last 10 uploaded files
+
+**Requirements:**
+- Use Sequelize aggregate functions (COUNT, GROUP BY)
+- Optimize queries with proper indexing
+- Cache results for 5 minutes using in-memory cache
+- Return formatted data ready for chart libraries
+
+### 7. Report Service (Port 8085)
+
+**Endpoints:**
+- POST `/reports/generate` - Generate report (body: { type: 'PDF'|'CSV'|'EXCEL', fileId?: number })
+- GET `/reports/download/:id` - Download generated report
+- GET `/reports/list` - List all generated reports
+- DELETE `/reports/:id` - Delete report file
+
+**Requirements:**
+- **PDF Generation**: Use PDFKit to create formatted PDF with table of NIC records
+- **CSV Export**: Use PapaParse to convert data to CSV
+- **Excel Generation**: Use ExcelJS to create Excel file with styling
+- Include headers: NIC Number, Birthday, Age, Gender, File Name, Status
+- Save reports to `/uploads/reports/` directory
+- Store report metadata in database
+- Implement streaming for large files
+
+### 8. API Gateway (Port 8080)
+
+**Requirements:**
+- Proxy all requests to appropriate microservices
+- Implement JWT authentication middleware
+- Routes:
+  - `/api/auth/*` → Auth Service (8081)
+  - `/api/validate/*` → NIC Validation Service (8082)
+  - `/api/files/*` → File Processing Service (8083)
+  - `/api/dashboard/*` → Dashboard Service (8084)
+  - `/api/reports/*` → Report Service (8085)
+- Add CORS middleware
+- Add request logging middleware
+- Add error handling middleware
+- Rate limiting (100 requests per 15 minutes per IP)
+
+### 9. Shared Utilities
+
+Create shared module with:
+- Database connection configuration
+- JWT middleware for authentication
+- Error handling utilities
+- Logger utility (Winston)
+- Validation schemas (express-validator)
+- Constants (error messages, status codes)
+
+### 10. Environment Variables
+
+Create `.env` files for each service:
+
+```
+# Database
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=nic_validation_db
+DB_USER=root
+DB_PASSWORD=your_password
+
+# JWT
+JWT_SECRET=your-super-secret-key-change-this
+JWT_EXPIRES_IN=24h
+
+# Service Ports
+API_GATEWAY_PORT=8080
+AUTH_SERVICE_PORT=8081
+NIC_VALIDATION_PORT=8082
+FILE_PROCESSING_PORT=8083
+DASHBOARD_SERVICE_PORT=8084
+REPORT_SERVICE_PORT=8085
+
+# File Upload
+MAX_FILE_SIZE=10485760
+UPLOAD_DIR=./uploads
+
+# Other Services URLs (for inter-service communication)
+AUTH_SERVICE_URL=http://localhost:8081
+NIC_VALIDATION_URL=http://localhost:8082
+FILE_PROCESSING_URL=http://localhost:8083
+DASHBOARD_SERVICE_URL=http://localhost:8084
+REPORT_SERVICE_URL=http://localhost:8085
+```
+
+
+---
+
+## Frontend Development Instructions
+
+### 1. Initial Setup - React Application
+
+Create React app with the following structure:
+
+```
+frontend/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── auth/
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   └── ForgotPassword.jsx
+│   │   ├── dashboard/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── StatsCard.jsx
+│   │   │   ├── Charts.jsx
+│   │   │   └── RecentUploads.jsx
+│   │   ├── files/
+│   │   │   ├── FileUpload.jsx
+│   │   │   ├── FileList.jsx
+│   │   │   └── RecordsList.jsx
+│   │   ├── reports/
+│   │   │   ├── ReportGenerator.jsx
+│   │   │   └── ReportsList.jsx
+│   │   ├── layout/
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   └── Footer.jsx
+│   │   └── common/
+│   │       ├── LoadingSpinner.jsx
+│   │       ├── ErrorMessage.jsx
+│   │       ├── SuccessMessage.jsx
+│   │       └── ProtectedRoute.jsx
+│   ├── services/
+│   │   ├── api.js            # Axios configuration
+│   │   ├── authService.js
+│   │   ├── fileService.js
+│   │   ├── dashboardService.js
+│   │   └── reportService.js
+│   ├── context/
+│   │   └── AuthContext.jsx   # Global auth state
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   └── useApi.js
+│   ├── utils/
+│   │   ├── validators.js
+│   │   └── formatters.js
+│   ├── App.jsx
+│   ├── App.css
+│   └── index.js
+└── package.json
+```
+
+**Technologies:**
+- React 18+ with Hooks
+- React Router DOM v6 for routing
+- Axios for API calls
+- Recharts for charts (Bar & Pie)
+- Tailwind CSS for styling
+- React Hot Toast for notifications
+- React Icons (lucide-react)
+- Formik + Yup for form handling and validation
+- Context API for state management
+
+### 2. Authentication System
+
+**Login Component Requirements:**
+- Form fields: Username, Password
+- Client-side validation (required fields, min length)
+- Submit to `/api/auth/login`
+- Store JWT token in localStorage
+- Redirect to dashboard on success
+- Show error messages for invalid credentials
+- "Forgot Password?" link
+- Responsive design (mobile-first)
+
+**Register Component:**
+- Fields: Username, Email, Password, Confirm Password
+- Email validation regex
+- Password strength indicator
+- Submit to `/api/auth/register`
+
+**Protected Routes:**
+- Check JWT token in localStorage
+- Verify token with backend on app load
+- Redirect to login if unauthorized
+- Implement ProtectedRoute wrapper component
+
+### 3. Dashboard Page
+
+**Requirements:**
+- Display 4 stat cards:
+  - Total Records (with icon)
+  - Male Users (with icon)
+  - Female Users (with icon)
+  - Files Processed (with icon)
+
+- **Bar Chart:** Age Distribution
+  - X-axis: Age ranges (0-18, 19-30, 31-50, 51-70, 70+)
+  - Y-axis: Count
+  - Use Recharts BarChart component
+  - Responsive width
+
+- **Pie Chart:** Gender Distribution
+  - Male vs Female percentage
+  - Use Recharts PieChart component
+  - Show labels with percentages
+  - Custom colors (#3b82f6 for male, #ec4899 for female)
+
+- **Recent Uploads Table:**
+  - Show last 10 uploaded files
+  - Columns: File Name, Upload Date, Total Records, Valid, Invalid, Status
+  - Status badges with colors (completed: green, processing: yellow, failed: red)
+
+- Fetch data from `/api/dashboard/summary` and `/api/dashboard/charts`
+- Implement auto-refresh every 30 seconds
+- Loading states while fetching
+
+### 4. File Upload Page
+
+**Requirements:**
+- File drop zone or file input for selecting 4 CSV files
+- Visual representation of selected files (show file names and sizes)
+- Validation:
+  - Exactly 4 files must be selected
+  - Each file must be .csv format
+  - Max file size: 10MB per file
+- Progress bar during upload
+- Upload button disabled until 4 valid files selected
+- POST to `/api/files/upload` with FormData (multipart/form-data)
+- Show success message with processing status
+- Display validation errors clearly
+- Drag and drop functionality
+
+### 5. Records Viewing Page
+
+**Requirements:**
+- Dropdown to filter by uploaded file name
+- Data table showing all NIC records:
+  - Columns: NIC Number, Birthday, Age, Gender, Status (Valid/Invalid), Error Message
+  - Pagination (20 records per page)
+  - Sorting by columns
+  - Search functionality (search by NIC number)
+- Color coding: Valid records (green), Invalid records (red)
+- Responsive table (horizontal scroll on mobile)
+- Export current view button
+- Fetch from `/api/files/:id/records`
+
+### 6. Reports Page
+
+**Requirements:**
+- Form to generate new report:
+  - Dropdown: Report Type (PDF, CSV, Excel)
+  - Optional: Filter by File (dropdown of uploaded files)
+  - Generate button
+- POST to `/api/reports/generate`
+- Show generation progress
+- List of previously generated reports:
+  - Columns: Report Type, File Name, Generated Date, Status, Actions (Download/Delete)
+  - Download button calls `/api/reports/download/:id`
+- Delete report with confirmation modal
+
+### 7. Navigation & Layout
+
+**Navbar:**
+- Logo/App name on left
+- Navigation links: Dashboard, Upload Files, View Records, Reports
+- User menu on right: Username, Logout button
+- Mobile hamburger menu
+
+**Sidebar (Optional for desktop):**
+- Same navigation links with icons
+- Collapsible
+
+**Responsive Design:**
+- Mobile-first approach
+- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+- Hamburger menu for mobile
+- Stacked layout on mobile, grid on desktop
+
+### 8. API Service Configuration
+
+**Axios Setup (src/services/api.js):**
+```javascript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:8080/api',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Request interceptor - Add JWT token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor - Handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+```
+
+### 9. Form Validation
+
+**Client-side validation rules:**
+- Username: Required, 3-50 characters, alphanumeric
+- Email: Required, valid email format
+- Password: Required, min 8 characters, must contain uppercase, lowercase, number
+- NIC: Match old or new format regex
+- File upload: Exactly 4 files, .csv extension, max 10MB each
+
+**Error Messages:**
+- Display below input fields in red
+- Clear on input change
+- Show field-specific errors from backend
+
+### 10. UI/UX Requirements
+
+**Design Principles:**
+- Clean, modern interface
+- Consistent color scheme (primary: blue, secondary: gray, success: green, error: red)
+- Smooth transitions and animations
+- Clear call-to-action buttons
+- Proper spacing and padding
+- Accessible (ARIA labels, keyboard navigation)
+- Loading spinners during API calls
+- Toast notifications for success/error messages
+- Confirm dialogs for destructive actions (delete)
+
+**Tailwind CSS Classes to Use:**
+- Container: `max-w-7xl mx-auto px-4`
+- Cards: `bg-white rounded-lg shadow-md p-6`
+- Buttons: `px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700`
+- Inputs: `w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500`
+- Tables: `min-w-full divide-y divide-gray-200`
+
+---
+
+## Implementation Order
+
+### Phase 1: Backend Core (Start Here)
+1. Setup project structure for all microservices
+2. Configure MySQL database and Sequelize models
+3. Implement Authentication Service with JWT
+4. Create NIC Validation Service with validation logic
+5. Test authentication and validation endpoints with Postman
+
+### Phase 2: Backend File Processing
+6. Implement File Processing Service with CSV parsing
+7. Integrate NIC Validation Service into File Processing
+8. Create Dashboard Service with aggregation queries
+9. Build Report Service (PDF, CSV, Excel generation)
+10. Setup API Gateway with routing and middleware
+
+### Phase 3: Frontend Core
+11. Setup React app with routing
+12. Create authentication pages (Login, Register)
+13. Implement AuthContext and ProtectedRoute
+14. Build Dashboard with charts (Recharts)
+15. Style with Tailwind CSS
+
+### Phase 4: Frontend Features
+16. Create File Upload component with drag-and-drop
+17. Build Records viewing page with pagination and filters
+18. Implement Reports generation page
+19. Add Navbar and responsive layout
+20. Implement error handling and loading states
+
+### Phase 5: Integration & Testing
+21. Connect frontend to backend API
+22. End-to-end testing of all features
+23. Fix bugs and optimize performance
+24. Add proper error handling throughout
+25. Create Docker configuration
+
+---
+
+## Testing Requirements
+
+### Backend Testing:
+- Test each endpoint with Postman
+- Validate NIC logic with sample data (both old and new formats)
+- Test edge cases (invalid NICs, empty files, large CSVs)
+- Test authentication (invalid tokens, expired tokens)
+- Test concurrent file uploads
+
+### Frontend Testing:
+- Test all forms with valid and invalid data
+- Test responsive design on mobile, tablet, desktop
+- Test file upload with various file types and sizes
+- Test navigation and routing
+- Test authentication flow (login, logout, protected routes)
+
+### Sample NIC Data for Testing:
+```
+Old Format Valid:
+- 923456789V (1992, Day 345, Male)
+- 855431234V (1985, Day 543, Female - 543-500=43)
+- 701234567X (1970, Day 123, Male)
+
+New Format Valid:
+- 199212345678 (1992, Day 123, Male)
+- 200165412345 (2001, Day 654, Female - 654-500=154)
+
+Invalid:
+- 12345 (too short)
+- 923456789A (invalid last character)
+- 999999999V (invalid day of year)
+```
+
+---
+
+## Security Requirements
+
+1. **Password Security:** Hash with bcrypt, never store plain text
+2. **JWT Security:** Sign with strong secret, implement expiration
+3. **Input Validation:** Validate all inputs on both client and server
+4. **SQL Injection:** Use Sequelize ORM parameterized queries
+5. **XSS Prevention:** Sanitize user inputs, use React's built-in escaping
+6. **CORS:** Configure allowed origins properly
+7. **File Upload:** Validate file types, limit file sizes, scan for malware
+8. **Rate Limiting:** Prevent brute force attacks on login
+9. **HTTPS:** Use HTTPS in production (configure in deployment)
+10. **Error Messages:** Don't leak sensitive information in error messages
+
+---
+
+## Performance Optimization
+
+1. **Database:** Add indexes on frequently queried columns (userId, fileId, nicNumber)
+2. **Caching:** Cache dashboard statistics for 5 minutes
+3. **Pagination:** Implement pagination for large datasets
+4. **Lazy Loading:** Load components and routes lazily in React
+5. **Image Optimization:** Optimize any images/icons used
+6. **Bundle Size:** Code split React app
+7. **API Calls:** Debounce search inputs, cancel previous requests
+8. **File Processing:** Process large CSVs in batches (1000 rows at a time)
+
+---
+
+
+---
+
+## Final Checklist
+
+**Backend:**
+- [ ] All microservices running on correct ports
+- [ ] Database schema created with proper relationships
+- [ ] JWT authentication working
+- [ ] NIC validation logic tested with sample data
+- [ ] File upload accepts exactly 4 CSV files
+- [ ] Dashboard returns correct statistics
+- [ ] Reports generate in all 3 formats (PDF, CSV, Excel)
+- [ ] API Gateway routes all requests correctly
+- [ ] Error handling implemented throughout
+- [ ] Environment variables configured
+
+**Frontend:**
+- [ ] Login/Register/Logout working
+- [ ] Protected routes redirect to login if unauthorized
+- [ ] Dashboard displays stats and charts
+- [ ] File upload validates 4 files and shows progress
+- [ ] Records page displays data with pagination
+- [ ] Reports page generates and downloads files
+- [ ] Responsive design works on mobile and desktop
+- [ ] Form validation working on all forms
+- [ ] Loading states and error messages display correctly
+- [ ] Toast notifications for user feedback
+
+**Integration:**
+- [ ] Frontend successfully calls all backend APIs
+- [ ] CORS configured correctly
+- [ ] JWT token stored and sent with requests
+- [ ] File upload and processing end-to-end working
+- [ ] Charts display real data from backend
+- [ ] All features tested and working
+
+---
+
+## Additional Notes
+
+- Follow REST API best practices
+- Use async/await instead of callbacks
+- Implement proper error boundaries in React
+- Use environment variables for all configuration
+- Never commit sensitive data (.env files)
+- Write clean, commented code
+- Follow consistent naming conventions
+- Use ESLint and Prettier for code formatting
+
+---
+
+Start by setting up the backend microservices structure, then implement each service one by one, testing as you go. Once the backend is complete and tested, build the frontend to consume the APIs. Good luck!

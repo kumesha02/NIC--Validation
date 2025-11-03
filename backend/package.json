@@ -1,0 +1,24 @@
+{
+  "name": "nic-validation-system-backend",
+  "version": "1.0.0",
+  "description": "Backend services for NIC Validation System",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd shared && npm install && cd ../api-gateway && npm install && cd ../auth-service && npm install && cd ../nic-validation-service && npm install && cd ../file-processing-service && npm install && cd ../dashboard-service && npm install && cd ../report-service && npm install",
+    "start-all": "concurrently \"cd api-gateway && npm start\" \"cd auth-service && npm start\" \"cd nic-validation-service && npm start\" \"cd file-processing-service && npm start\" \"cd dashboard-service && npm start\" \"cd report-service && npm start\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nic",
+    "validation",
+    "microservices",
+    "nodejs",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.0",
+    "sequelize-cli": "^6.6.3"
+  }
+}

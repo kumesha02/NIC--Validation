@@ -1,0 +1,6 @@
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:34:21.277Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:42:32.280Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:53:10.284Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:56:07.174Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T16:58:28.935Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"auth-service","timestamp":"2025-11-03T17:00:59.715Z"}

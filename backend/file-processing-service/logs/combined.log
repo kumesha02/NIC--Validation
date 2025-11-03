@@ -1,0 +1,10 @@
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:10:53.325Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:21:42.668Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:32:11.528Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:42:32.083Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:53:10.128Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:56:07.217Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"file-processing-service","timestamp":"2025-11-03T16:58:28.756Z"}
+{"level":"error","message":"Database synchronization failed: Duplicate key name 'n_i_c_records_nic_number'","service":"file-processing-service","timestamp":"2025-11-03T17:06:24.025Z"}
+{"level":"info","message":"Database synchronized successfully","service":"file-processing-service","timestamp":"2025-11-03T18:11:38.379Z"}
+{"level":"info","message":"File Processing Service started on port 8083","service":"file-processing-service","timestamp":"2025-11-03T18:11:38.390Z"}

@@ -1,0 +1,7 @@
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:10:53.084Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:21:42.294Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:32:11.244Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:42:31.682Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:53:09.893Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:56:06.863Z"}
+{"level":"error","message":"Database synchronization failed: Access denied for user 'root'@'localhost' (using password: NO)","service":"dashboard-service","timestamp":"2025-11-03T16:58:28.548Z"}

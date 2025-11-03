@@ -1,0 +1,173 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: nic-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: nic_validation_db
+      MYSQL_USER: nic_user
+      MYSQL_PASSWORD: nic_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: backend/auth-service/Dockerfile
+    container_name: nic-auth-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8081
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: nic_user
+      DB_PASSWORD: nic_pass
+      DB_NAME: nic_validation_db
+      JWT_SECRET: supersecretjwt
+      EMAIL_HOST: smtp.example.com
+      EMAIL_PORT: 587
+      EMAIL_USER: user@example.com
+      EMAIL_PASS: password
+      EMAIL_FROM: noreply@example.com
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  nic-validation-service:
+    build:
+      context: ..
+      dockerfile: backend/nic-validation-service/Dockerfile
+    container_name: nic-validation-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8082
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: nic_user
+      DB_PASSWORD: nic_pass
+      DB_NAME: nic_validation_db
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  file-processing-service:
+    build:
+      context: ..
+      dockerfile: backend/file-processing-service/Dockerfile
+    container_name: nic-file-processing-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8083
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: nic_user
+      DB_PASSWORD: nic_pass
+      DB_NAME: nic_validation_db
+      NIC_VALIDATION_SERVICE_URL: http://nic-validation-service:8082
+    volumes:
+      - uploads_data:/usr/src/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nic-validation-service:
+        condition: service_started
+
+  dashboard-service:
+    build:
+      context: ..
+      dockerfile: backend/dashboard-service/Dockerfile
+    container_name: nic-dashboard-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8084
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: nic_user
+      DB_PASSWORD: nic_pass
+      DB_NAME: nic_validation_db
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  report-service:
+    build:
+      context: ..
+      dockerfile: backend/report-service/Dockerfile
+    container_name: nic-report-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8085
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: nic_user
+      DB_PASSWORD: nic_pass
+      DB_NAME: nic_validation_db
+    volumes:
+      - reports_data:/usr/src/app/reports
+    depends_on:
+      mysql:
+        condition: service_healthy
+      file-processing-service:
+        condition: service_started
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: backend/api-gateway/Dockerfile
+    container_name: nic-api-gateway
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      JWT_SECRET: supersecretjwt
+      AUTH_SERVICE_URL: http://auth-service:8081
+      NIC_VALIDATION_SERVICE_URL: http://nic-validation-service:8082
+      FILE_PROCESSING_SERVICE_URL: http://file-processing-service:8083
+      DASHBOARD_SERVICE_URL: http://dashboard-service:8084
+      REPORT_SERVICE_URL: http://report-service:8085
+    ports:
+      - '8080:8080'
+    depends_on:
+      auth-service:
+        condition: service_started
+      file-processing-service:
+        condition: service_started
+      dashboard-service:
+        condition: service_started
+      report-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    container_name: nic-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://api-gateway:8080/api
+    ports:
+      - '3000:3000'
+    depends_on:
+      api-gateway:
+        condition: service_started
+
+volumes:
+  mysql_data:
+  uploads_data:
+  reports_data:
